@@ -1,0 +1,9 @@
+{
+  "name": "tiffin-holo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tiffin Holo — holographic tiffin service site with an order backend",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}
