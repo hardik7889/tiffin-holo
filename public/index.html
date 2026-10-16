@@ -958,6 +958,7 @@
     <a href="#packages">Menu</a>
     <a href="#packages" id="navMenu">Packages</a>
     <a href="#order">Order</a>
+    <a href="#admin" id="orderHistoryBtn" title="Order History" aria-label="Order History" style="font-size:16px;cursor:pointer;">📋</a>
     <a href="#" id="adminKey" title="Owner login" aria-label="Owner login" style="color:#ffd700;font-size:16px;cursor:pointer;">🔒</a>
   </div>
 </nav>
@@ -2085,6 +2086,17 @@ function thSetStatus(id, status){
   });
 
   document.getElementById('adminKey').addEventListener('click', function(e){
+    e.preventDefault();
+    if (isAuthed) {
+      refresh();
+      open(adminM);
+      adminM.scrollIntoView({behavior: 'smooth'});
+    } else {
+      errEl.style.display = 'none';
+      open(loginM);
+    }
+  });
+  document.getElementById('orderHistoryBtn').addEventListener('click', function(e){
     e.preventDefault();
     if (isAuthed) {
       refresh();
