@@ -148,6 +148,8 @@ exports.handler = async (event) => {
       address: clean(body.address, 400),
       pkg: clean(body.pkg, 120),
       note: clean(body.note, 300),
+      status: 'pending',
+      statusHistory: [{ status: 'pending', at: new Date().toISOString() }],
     };
 
     const list = await readOrders();
@@ -167,6 +169,35 @@ exports.handler = async (event) => {
   if (method === 'GET') {
     const list = await readOrders();
     return json(200, { ok: true, orders: list, count: list.length });
+  }
+
+  if (method === 'PUT') {
+    let body = {};
+    try {
+      body = JSON.parse(event.body || '{}');
+    } catch (e) {}
+
+    const id = clean(body.id, 60);
+    const newStatus = clean(body.status, 20).toLowerCase();
+
+    if (!id) return json(400, { ok: false, error: 'id_required' });
+
+    const validStatuses = ['pending', 'confirmed', 'preparing', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(newStatus)) {
+      return json(400, { ok: false, error: 'invalid_status', valid: validStatuses });
+    }
+
+    const list = await readOrders();
+    const order = list.find((o) => o.id === id);
+
+    if (!order) return json(404, { ok: false, error: 'not_found' });
+
+    order.status = newStatus;
+    if (!order.statusHistory) order.statusHistory = [];
+    order.statusHistory.push({ status: newStatus, at: new Date().toISOString() });
+
+    await writeOrders(list);
+    return json(200, { ok: true, id, status: newStatus });
   }
 
   if (method === 'DELETE') {

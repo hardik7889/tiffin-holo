@@ -399,6 +399,25 @@
     border-radius:8px;padding:5px 11px;cursor:pointer;font-size:.72rem;font-weight:700;
   }
   .ord-del button:hover{background:rgba(255,60,90,.15)}
+  .ord-status{
+    display:inline-block;padding:3px 10px;border-radius:20px;
+    font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  }
+  .ord-status.st-pending{background:rgba(255,145,0,.15);color:#ff9100;border:1px solid rgba(255,145,0,.3)}
+  .ord-status.st-confirmed{background:rgba(0,240,255,.15);color:#00f0ff;border:1px solid rgba(0,240,255,.3)}
+  .ord-status.st-preparing{background:rgba(123,47,255,.15);color:#7b2fff;border:1px solid rgba(123,47,255,.3)}
+  .ord-status.st-delivered{background:rgba(0,230,118,.15);color:#00e676;border:1px solid rgba(0,230,118,.3)}
+  .ord-status.st-cancelled{background:rgba(255,82,82,.15);color:#ff5252;border:1px solid rgba(255,82,82,.3)}
+  .ord-actions{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+  .ord-actions button{
+    padding:5px 12px;border-radius:8px;font-size:.72rem;font-weight:700;
+    cursor:pointer;border:1px solid rgba(0,240,255,.3);background:transparent;
+    color:#00f0ff;transition:all .2s;
+  }
+  .ord-actions button:hover{border-color:#00f0ff;background:rgba(0,240,255,.08)}
+  .ord-actions .ord-cancel{border-color:rgba(255,82,82,.3);color:#ff5252}
+  .ord-actions .ord-cancel:hover{border-color:#ff5252;background:rgba(255,82,82,.08)}
+  .ord-done-note{font-size:.72rem;color:#8888aa;font-style:italic}
   .ord-grid{
     display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
     gap:8px 18px;margin-top:12px;
@@ -1739,6 +1758,13 @@ function thDeleteAll(){
     body: JSON.stringify({ all: true })
   }).then(function(r){ return r.json(); });
 }
+function thSetStatus(id, status){
+  return fetch(TH_API, {
+    method: 'PUT',
+    headers: thHeaders({ 'content-type': 'application/json' }),
+    body: JSON.stringify({ id: id, status: status })
+  }).then(function(r){ return r.json(); });
+}
 
 (function(){
   var isAuthed = false;
@@ -1781,6 +1807,24 @@ function thDeleteAll(){
     } catch (e) {}
   }
 
+  var ORDER_STATUSES = ['pending','confirmed','preparing','delivered','cancelled'];
+  var STATUS_LABEL = {pending:'⏳ Pending', confirmed:'✅ Confirmed', preparing:'👨‍🍳 Preparing', delivered:'🚚 Delivered', cancelled:'❌ Cancelled'};
+
+  function statusBadge(s){
+    return '<span class="ord-status st-' + esc(s || 'pending') + '">' + esc(STATUS_LABEL[s] || s) + '</span>';
+  }
+
+  function statusActions(o){
+    var s = o.status || 'pending';
+    var h = '';
+    if (s === 'pending')      h += '<button data-act="confirmed" data-id="' + esc(o.id) + '">✅ Accept</button>';
+    if (s === 'confirmed')    h += '<button data-act="preparing" data-id="' + esc(o.id) + '">👨‍🍳 Preparing</button>';
+    if (s === 'preparing')    h += '<button data-act="delivered" data-id="' + esc(o.id) + '">🚚 Delivered</button>';
+    if (s !== 'delivered' && s !== 'cancelled') h += '<button data-act="cancelled" data-id="' + esc(o.id) + '" class="ord-cancel">❌ Cancel</button>';
+    if (s === 'delivered' || s === 'cancelled') h += '<span class="ord-done-note">' + (s === 'delivered' ? 'Ho gaya ✓' : 'Cancelled') + '</span>';
+    return h;
+  }
+
   function renderList(list){
     document.getElementById('admTotal').textContent = list.length;
     if (!list.length){
@@ -1792,7 +1836,9 @@ function thDeleteAll(){
         '<div class="ord-top">' +
           '<span class="ord-id">' + esc(o.id) + '</span>' +
           '<span class="ord-when">' + esc(fmtWhen(o.at)) + '</span>' +
+          statusBadge(o.status) +
         '</div>' +
+        '<div class="ord-actions">' + statusActions(o) + '</div>' +
         '<div class="ord-del"><button data-del="' + esc(o.id) + '">🗑 Delete</button></div>' +
         '<div class="ord-who" style="margin-top:8px">' + esc(o.name || '—') + '</div>' +
         '<div class="ord-grid">' +
@@ -1819,8 +1865,23 @@ function thDeleteAll(){
     });
   }
 
-  /* one delegated handler: delete buttons never need re-binding */
+  /* one delegated handler: delete + status action buttons never need re-binding */
   listEl.addEventListener('click', function(e){
+    var actBtn = e.target.closest('[data-act]');
+    if (actBtn) {
+      var actId = actBtn.getAttribute('data-id');
+      var actStatus = actBtn.getAttribute('data-act');
+      if (!actId || !actStatus) return;
+      var labels = {confirmed:'Accept', preparing:'Preparing', delivered:'Delivered', cancelled:'Cancel'};
+      var msg = actStatus === 'cancelled'
+        ? 'Order ' + actId + ' cancel karna hai?'
+        : 'Order ' + actId + ' ko ' + (labels[actStatus] || actStatus) + ' mark karna hai?';
+      if (!confirm(msg)) return;
+      thSetStatus(actId, actStatus).then(function(){
+        refresh();
+      });
+      return;
+    }
     var btn = e.target.closest('[data-del]');
     if (!btn) return;
     var id = btn.getAttribute('data-del');
