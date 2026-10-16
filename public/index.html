@@ -312,7 +312,7 @@
   .pkg-list{display:grid;gap:16px}
 
   /* ---------- admin: order history (owner-only) ---------- */
-  #adminDock{position:fixed;right:18px;bottom:18px;z-index:120}
+  /* #adminDock removed — owner icon lives in navbar */
   .admin-key{
     width:46px;height:46px;border-radius:50%;cursor:pointer;
     background:rgba(13,10,36,.9);border:1px solid rgba(0,240,255,.35);
@@ -955,6 +955,7 @@
     <a href="#packages">Menu</a>
     <a href="#packages" id="navMenu">Packages</a>
     <a href="#order">Order</a>
+    <a href="#" id="adminKey" title="Owner login" aria-label="Owner login" style="color:#ffd700;font-size:16px;cursor:pointer;">🔒</a>
   </div>
 </nav>
 
@@ -1491,9 +1492,7 @@
     </div>
   </section>
 
-  <div id="adminDock">
-    <button class="admin-key" id="adminKey" title="Owner login" aria-label="Owner login">🔒</button>
-  </div>
+  <!-- Admin dock removed - owner icon moved to navbar above -->
 
   <div class="admin-modal" id="adminLoginModal" role="dialog" aria-label="Owner login">
     <div class="admin-card" style="max-width:420px">
@@ -2082,9 +2081,16 @@ function thSetStatus(id, status){
     });
   });
 
-  document.getElementById('adminKey').addEventListener('click', function(){
-    if (isAuthed) { refresh(); open(adminM); }
-    else { errEl.style.display = 'none'; open(loginM); }
+  document.getElementById('adminKey').addEventListener('click', function(e){
+    e.preventDefault();
+    if (isAuthed) {
+      refresh();
+      open(adminM);
+      adminM.scrollIntoView({behavior: 'smooth'});
+    } else {
+      errEl.style.display = 'none';
+      open(loginM);
+    }
   });
   document.getElementById('admLoginClose').addEventListener('click', function(){ close(loginM); });
   [loginM].forEach(function(m){
