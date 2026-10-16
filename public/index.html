@@ -2283,8 +2283,19 @@ function thSetStatus(id, status){
   obs.observe(document.body, {childList: true, subtree: true});
   setTimeout(function(){ obs.disconnect(); }, 15000);
 })();
+/* Remove Netlify badge completely */
+(function(){
+  function removeBadge(){
+    document.querySelectorAll('#netlify-hud, .netlify-hud, [id*="netlify-hud"]').forEach(function(el){
+      el.remove();
+    });
+  }
+  removeBadge();
+  var obs = new MutationObserver(removeBadge);
+  obs.observe(document.body, {childList: true, subtree: true});
+  setTimeout(function(){ obs.disconnect(); }, 15000);
+})();
 </script>
-
 
 <!-- Install App Prompt -->
 <div class="install-prompt" id="installPrompt">
