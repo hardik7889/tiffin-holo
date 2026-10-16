@@ -41,9 +41,17 @@ const json = (status, body) => ({
   body: JSON.stringify(body),
 });
 
+function getOrderStore() {
+  return getStore({
+    name: STORE,
+    siteID: process.env.NETLIFY_SITE_ID || 'a78485a2-f9ef-403e-af38-b1c3918d766d',
+    token: process.env.NETLIFY_API_TOKEN
+  });
+}
+
 async function readOrders() {
   try {
-    const store = getStore(STORE);
+    const store = getOrderStore();
     const raw = await store.get(KEY, { type: 'json' });
     return Array.isArray(raw) ? raw : [];
   } catch (e) {
@@ -52,7 +60,7 @@ async function readOrders() {
 }
 
 async function writeOrders(list) {
-  const store = getStore(STORE);
+  const store = getOrderStore();
   await store.setJSON(KEY, list);
 }
 
