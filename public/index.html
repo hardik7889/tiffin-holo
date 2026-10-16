@@ -415,8 +415,14 @@
     color:#00f0ff;transition:all .2s;
   }
   .ord-actions button:hover{border-color:#00f0ff;background:rgba(0,240,255,.08)}
+  .ord-actions .ord-accept{border-color:rgba(0,230,118,.4);color:#00e676}
+  .ord-actions .ord-accept:hover{border-color:#00e676;background:rgba(0,230,118,.1)}
   .ord-actions .ord-cancel{border-color:rgba(255,82,82,.3);color:#ff5252}
   .ord-actions .ord-cancel:hover{border-color:#ff5252;background:rgba(255,82,82,.08)}
+  .ord-actions .ord-deliver{border-color:rgba(0,240,255,.3);color:#00f0ff}
+  .ord-actions .ord-deliver:hover{border-color:#00f0ff;background:rgba(0,240,255,.08)}
+  .ord-actions .ord-undo{border-color:rgba(255,215,0,.3);color:#ffd700}
+  .ord-actions .ord-undo:hover{border-color:#ffd700;background:rgba(255,215,0,.08)}
   .ord-done-note{font-size:.72rem;color:#8888aa;font-style:italic}
   .ord-grid{
     display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
@@ -1868,10 +1874,12 @@ function thSetStatus(id, status){
   function statusActions(o){
     var s = o.status || 'pending';
     var h = '';
-    if (s === 'pending')      h += '<button data-act="confirmed" data-id="' + esc(o.id) + '">✅ Accept</button>';
-    if (s === 'confirmed')    h += '<button data-act="preparing" data-id="' + esc(o.id) + '">👨‍🍳 Preparing</button>';
-    if (s === 'preparing')    h += '<button data-act="delivered" data-id="' + esc(o.id) + '">🚚 Delivered</button>';
-    if (s !== 'delivered' && s !== 'cancelled') h += '<button data-act="cancelled" data-id="' + esc(o.id) + '" class="ord-cancel">❌ Cancel</button>';
+    /* Accept, Cancel, Delivered — hamesha visible, chahe status kuch bhi ho */
+    if (s !== 'delivered') h += '<button data-act="confirmed" data-id="' + esc(o.id) + '" class="ord-accept">✅ Accept</button>';
+    if (s !== 'cancelled' && s !== 'delivered') h += '<button data-act="cancelled" data-id="' + esc(o.id) + '" class="ord-cancel">❌ Cancel</button>';
+    if (s !== 'delivered') h += '<button data-act="delivered" data-id="' + esc(o.id) + '" class="ord-deliver">🚚 Delivered</button>';
+    /* Optional: Undo / go back one step */
+    if (s === 'confirmed' || s === 'preparing') h += '<button data-act="pending" data-id="' + esc(o.id) + '" class="ord-undo">↩️ Wapas</button>';
     if (s === 'delivered' || s === 'cancelled') h += '<span class="ord-done-note">' + (s === 'delivered' ? 'Ho gaya ✓' : 'Cancelled') + '</span>';
     return h;
   }
