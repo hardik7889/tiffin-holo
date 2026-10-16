@@ -822,7 +822,129 @@
     .cw-sum{grid-column:1/-1;text-align:left;font-size:.86rem}
     .cw-sum::before{content:'Day total ';color:var(--dim);font-weight:400;font-size:.72rem}
   }
+
+  /* Mobile Bottom Navigation */
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: rgba(4, 1, 13, 0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0, 240, 255, 0.15);
+    padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
+  }
+  .mobile-nav-inner {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .mobile-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 12px;
+    color: #8888aa;
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: color 0.2s;
+  }
+  .mobile-nav a span.icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+  .mobile-nav a.active {
+    color: #00f0ff;
+  }
+  .mobile-nav a:active {
+    color: #00f0ff;
+  }
+  @media (max-width: 768px) {
+    .mobile-nav {
+      display: block;
+    }
+    body {
+      padding-bottom: 70px;
+    }
+  }
+
+  /* Install App Prompt */
+  .install-prompt {
+    display: none;
+    position: fixed;
+    bottom: 80px;
+    left: 16px;
+    right: 16px;
+    z-index: 300;
+    background: linear-gradient(135deg, rgba(0,240,255,.15), rgba(123,47,255,.15));
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0,240,255,.4);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 8px 40px rgba(0,240,255,.2);
+  }
+  .install-prompt.show {
+    display: block;
+    animation: slideUp 0.4s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .install-prompt h4 {
+    color: #00f0ff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .install-prompt p {
+    color: #ccc;
+    font-size: 13px;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .install-prompt-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  .install-prompt button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all .2s;
+  }
+  .install-prompt .install-yes {
+    background: linear-gradient(135deg, #00f0ff, #7b2fff);
+    color: #000;
+  }
+  .install-prompt .install-no {
+    background: transparent;
+    color: #888;
+    border: 1px solid rgba(255,255,255,.15);
+  }
 </style>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#04010d">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <meta name="apple-mobile-web-app-title" content="Tiffin Holo">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
 </head>
 <body>
 <canvas id="aurora"></canvas>
@@ -1416,6 +1538,14 @@
 <div class="toast" id="toast">🎉 Order received! 2 minute mein contact karenge.</div>
 
 <script>
+/* PWA Service Worker */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
+  });
+}
+
+
 /* ---------- tier B aurora backdrop: low-res, capped fps ---------- */
 (function(){
   var c = document.getElementById('aurora'), x = c.getContext('2d');
@@ -2070,6 +2200,87 @@ function thSetStatus(id, status){
   }
 })();
 
+
+/* Mobile bottom nav active state */
+(function(){
+  var links = document.querySelectorAll('.mobile-nav a');
+  if (!links.length) return;
+  function setActive(){
+    var sections = [
+      {id: 'hero', el: document.getElementById('hero')},
+      {id: 'packages', el: document.getElementById('packages')},
+      {id: 'order', el: document.getElementById('order')},
+      {id: 'admin', el: document.getElementById('admin')}
+    ];
+    var scrollPos = window.scrollY + 120;
+    var current = 'home';
+    sections.forEach(function(s){
+      if (s.el) {
+        var top = s.el.offsetTop;
+        if (scrollPos >= top) current = s.id === 'packages' ? 'menu' : s.id === 'order' ? 'order' : s.id === 'admin' ? 'owner' : 'home';
+      }
+    });
+    links.forEach(function(a){
+      a.classList.toggle('active', a.getAttribute('data-nav') === current);
+    });
+  }
+  window.addEventListener('scroll', setActive, {passive: true});
+  setActive();
+})();
+
+/* PWA Install Prompt */
+(function(){
+  var deferred = null;
+  var prompt = document.getElementById('installPrompt');
+  if (!prompt) return;
+
+  // Capture install event
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferred = e;
+    // Show prompt after 3 seconds
+    setTimeout(function(){ prompt.classList.add('show'); }, 3000);
+  });
+
+  // Install button
+  var yes = document.getElementById('installYes');
+  var no = document.getElementById('installNo');
+  if (yes) yes.addEventListener('click', function(){
+    prompt.classList.remove('show');
+    if (deferred) {
+      deferred.prompt();
+      deferred.userChoice.then(function(){ deferred = null; });
+    }
+  });
+  if (no) no.addEventListener('click', function(){
+    prompt.classList.remove('show');
+  });
+
+  // Hide if already installed
+  window.addEventListener('appinstalled', function(){
+    prompt.classList.remove('show');
+  });
+})();
 </script>
+
+
+<!-- Install App Prompt -->
+<div class="install-prompt" id="installPrompt">
+  <h4>📲 Tiffin Holo App Install Karo</h4>
+  <p>Home screen par app jaisa experience karo — fast, offline, notifications!</p>
+  <div class="install-prompt-buttons">
+    <button class="install-yes" id="installYes">✅ Install</button>
+    <button class="install-no" id="installNo">❌ Baad Mein</button>
+  </div>
+</div>
+<!-- Mobile Bottom Navigation -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <a href="#hero" class="active" data-nav="home"><span class="icon">🏠</span>Home</a>
+    <a href="#packages" data-nav="menu"><span class="icon">🍽️</span>Menu</a>
+    <a href="#order" data-nav="order"><span class="icon">📋</span>Order</a>
+    <a href="#admin" data-nav="owner"><span class="icon">🔒</span>Owner</a>
+  </div>
+</nav>
 </body>
 </html>
