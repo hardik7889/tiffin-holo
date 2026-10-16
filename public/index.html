@@ -1363,13 +1363,6 @@
     </div>
   </section>
 
-  <section id="admin" style="display:none">
-    <div class="sec-head">
-      <h2 class="sec-title">📋 Order History</h2>
-      <p class="sec-sub">Owner access only — orders yahan se manage karo</p>
-    </div>
-  </section>
-
   <div id="adminDock">
     <button class="admin-key" id="adminKey" title="Owner login" aria-label="Owner login">🔒</button>
   </div>
@@ -1392,20 +1385,19 @@
     </div>
   </div>
 
-  <div class="admin-modal" id="adminModal" role="dialog" aria-label="Order history">
-    <div class="admin-card">
-      <button class="adm-close" id="admClose">✕</button>
-      <h3>Order History</h3>
-      <p class="adm-sub">Aapke saare orders — kisi bhi order ko delete kar sakte ho</p>
-      <div class="adm-tools">
-        <span class="adm-count">Total orders: <b id="admTotal">0</b></span>
-        <button class="adm-tool danger" id="admClear">🗑 Sab Delete</button>
-        <button class="adm-tool" id="admExport">⬇ JSON Export</button>
-        <button class="adm-tool primary" id="admLogout">🔒 Logout</button>
-      </div>
-      <div id="admList"></div>
+  <section id="admin" style="display:none;max-width:1100px;margin:0 auto;padding:60px 20px 80px">
+    <div class="sec-head">
+      <h2 class="sec-title">📋 Order History</h2>
+      <p class="sec-sub">Aapke saare orders — status update karo, delete karo, ya export karo</p>
     </div>
-  </div>
+    <div class="adm-tools" style="margin:20px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <span class="adm-count">Total orders: <b id="admTotal">0</b></span>
+      <button class="adm-tool danger" id="admClear" style="padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px">🗑 Sab Delete</button>
+      <button class="adm-tool" id="admExport" style="padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px">⬇ JSON Export</button>
+      <button class="adm-tool primary" id="admLogout" style="padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px;background:linear-gradient(135deg,#00f0ff,#7b2fff);color:#000;border:none;font-weight:700">🔒 Logout</button>
+    </div>
+    <div id="admList"></div>
+  </section>
 
 </main>
 
@@ -1769,13 +1761,26 @@ function thSetStatus(id, status){
 (function(){
   var isAuthed = false;
   var loginM  = document.getElementById('adminLoginModal');
-  var adminM  = document.getElementById('adminModal');
+  var adminM  = document.getElementById('admin');
   var listEl  = document.getElementById('admList');
   var errEl   = document.getElementById('admErr');
   var seenIds = {};
 
-  function open(el){ if (el) el.classList.add('open'); }
-  function close(el){ if (el) el.classList.remove('open'); }
+  function open(el){
+    if (!el) return;
+    if (el.id === 'admin'){ el.style.display = 'block'; return; }
+    el.classList.add('open');
+  }
+  function close(el){
+    if (!el) return;
+    if (el.id === 'admin'){ el.style.display = 'none'; return; }
+    el.classList.remove('open');
+  }
+  function isOpen(el){
+    if (!el) return false;
+    if (el.id === 'admin') return el.style.display === 'block';
+    return el.classList.contains('open');
+  }
   function esc(s){
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -1897,8 +1902,7 @@ function thSetStatus(id, status){
     else { errEl.style.display = 'none'; open(loginM); }
   });
   document.getElementById('admLoginClose').addEventListener('click', function(){ close(loginM); });
-  document.getElementById('admClose').addEventListener('click', function(){ close(adminM); });
-  [loginM, adminM].forEach(function(m){
+  [loginM].forEach(function(m){
     m.addEventListener('click', function(e){ if (e.target === m) close(m); });
   });
   document.addEventListener('keydown', function(e){
@@ -1991,7 +1995,7 @@ function thSetStatus(id, status){
         fresh.forEach(function(o){ seenIds[o.id] = true; });
         if (fresh.length) {
           ownerAlert(fresh[0]);
-          if (adminM.classList.contains('open')) renderList(list);
+          if (isOpen(adminM)) renderList(list);
         }
       }
       lastMax = newest;
