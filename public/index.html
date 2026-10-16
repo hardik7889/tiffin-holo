@@ -933,6 +933,9 @@
     color: #888;
     border: 1px solid rgba(255,255,255,.15);
   }
+
+  /* Hide Netlify badge */
+  #netlify-hud, .netlify-hud, [id*="netlify-hud"], iframe[src*="netlify"] { display: none !important; }
 </style>
 
     <!-- PWA -->
@@ -2266,6 +2269,19 @@ function thSetStatus(id, status){
   window.addEventListener('appinstalled', function(){
     prompt.classList.remove('show');
   });
+})();
+
+/* Remove Netlify badge completely */
+(function(){
+  function removeBadge(){
+    document.querySelectorAll('#netlify-hud, .netlify-hud, [id*="netlify-hud"]').forEach(function(el){
+      el.remove();
+    });
+  }
+  removeBadge();
+  var obs = new MutationObserver(removeBadge);
+  obs.observe(document.body, {childList: true, subtree: true});
+  setTimeout(function(){ obs.disconnect(); }, 15000);
 })();
 </script>
 
